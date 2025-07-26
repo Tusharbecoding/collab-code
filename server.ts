@@ -1,15 +1,18 @@
 import { Server } from "socket.io";
 import { createServer } from "http";
+import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { RedisCollaboration } from "@/lib/redis";
-import { RabbitMQCollaboration } from "@/lib/rabbitmq";
-import { supabase } from "@/lib/supabase";
+import { RabbitMQCollaboration } from "./src/lib/rabbitmq";
+import { supabase } from "./src/lib/supabase";
 import {
   WebSocketMessage,
   User,
   CodeChange,
   SessionState,
 } from "@/types/collaboration";
+
+dotenv.config();
 
 const server = createServer();
 const io = new Server(server, {

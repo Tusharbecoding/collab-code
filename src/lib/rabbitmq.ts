@@ -2,8 +2,8 @@ import amqp from "amqplib";
 import { CodeChange } from "@/types/collaboration";
 
 export class RabbitMQCollaboration {
-  private static connection: amqp.Connection;
-  private static channel: amqp.Channel;
+  private static connection: any;
+  private static channel: any;
 
   static async connect(): Promise<void> {
     try {
@@ -11,8 +11,6 @@ export class RabbitMQCollaboration {
         process.env.RABBITMQ_URL || "amqp://admin:password@localhost:5672"
       );
       this.channel = await this.connection.createChannel();
-
-      // Create exchanges and queues
       await this.channel.assertExchange("collaboration", "direct", {
         durable: true,
       });
@@ -44,7 +42,7 @@ export class RabbitMQCollaboration {
   ): Promise<void> {
     if (!this.channel) await this.connect();
 
-    await this.channel.consume("code-changes", (msg) => {
+    await this.channel.consume("code-changes", (msg: any) => {
       if (msg) {
         const { sessionId, change } = JSON.parse(msg.content.toString());
         callback(sessionId, change);
