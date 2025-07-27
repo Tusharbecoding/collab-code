@@ -34,8 +34,8 @@ export class RedisCollaboration {
   }
 
   static async addUserToSession(sessionId: string, user: any): Promise<void> {
-    await redis.sadd(`session:${sessionId}:user`, JSON.stringify(user));
-    await redis.expire(`session:${sessionId}:user`, 3600);
+    await redis.sadd(`session:${sessionId}:users`, JSON.stringify(user));
+    await redis.expire(`session:${sessionId}:users`, 3600);
   }
 
   static async removeUserFromSession(

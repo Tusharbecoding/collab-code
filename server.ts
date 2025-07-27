@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
-import { RedisCollaboration } from "@/lib/redis";
+import { RedisCollaboration } from "./src/lib/redis";
 import { RabbitMQCollaboration } from "./src/lib/rabbitmq";
 import { supabase } from "./src/lib/supabase";
 import {
@@ -10,7 +10,7 @@ import {
   User,
   CodeChange,
   SessionState,
-} from "@/types/collaboration";
+} from "./src/types/collaboration";
 
 dotenv.config();
 
@@ -98,11 +98,19 @@ io.on("connection", (socket) => {
     async (data: { sessionId: string; change: CodeChange }) => {
       const { sessionId, change } = data;
 
+      console.log("Code change received on server:", {
+        sessionId,
+        userId: change.userId,
+        textLength: change.text.length,
+        socketId: socket.id
+      });
+
       try {
         await RedisCollaboration.updateSessionCode(sessionId, change.text);
 
         await RabbitMQCollaboration.publishCodeChange(sessionId, change);
 
+        console.log("Broadcasting code change to room:", sessionId);
         socket.to(sessionId).emit("code-change", change);
 
         await supabase.from("sessions").upsert({

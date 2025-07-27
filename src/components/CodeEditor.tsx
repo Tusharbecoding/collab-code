@@ -26,6 +26,33 @@ export default function CodeEditor({
   const [code, setCode] = useState(initialCode);
   const decorationsRef = useRef<string[]>([]);
   const lastChangeRef = useRef<string>("");
+  const isRemoteChangeRef = useRef<boolean>(false);
+
+  const handleCodeChange = (change: any) => {
+    console.log("Received code change in CodeEditor:", {
+      changeId: change.id,
+      userId: change.userId,
+      textLength: change.text.length,
+      operation: change.operation
+    });
+    
+    const editor = editorRef.current;
+    if (!editor) {
+      console.log("No editor ref available");
+      return;
+    }
+
+    isRemoteChangeRef.current = true;
+    lastChangeRef.current = change.text;
+    const position = editor.getPosition();
+
+    console.log("Setting editor value to:", change.text.substring(0, 50) + "...");
+    editor.setValue(change.text);
+    setCode(change.text);
+    if (position) {
+      editor.setPosition(position);
+    }
+  };
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
@@ -37,30 +64,22 @@ export default function CodeEditor({
     });
     editor.onDidChangeModelContent((e) => {
       const newCode = editor.getValue();
-      if (newCode !== lastChangeRef.current) {
+      if (newCode !== lastChangeRef.current && !isRemoteChangeRef.current) {
         setCode(newCode);
         onCodeChange(newCode);
       }
+      isRemoteChangeRef.current = false;
     });
+
+    // Set up socket listener after editor is mounted
+    if (socket) {
+      console.log("Setting up code-change listener after editor mount");
+      socket.on("code-change", handleCodeChange);
+    }
   };
 
   useEffect(() => {
-    if (!socket || !editorRef.current) return;
-
-    const handleCodeChange = (change: any) => {
-      const editor = editorRef.current;
-      if (!editor) return;
-
-      lastChangeRef.current = change.text;
-      const position = editor.getPosition();
-
-      editor.setValue(change.text);
-      if (position) {
-        editor.setPosition(position);
-      }
-    };
-
-    socket.on("code-change", handleCodeChange);
+    if (!socket) return;
 
     return () => {
       socket.off("code-change", handleCodeChange);
@@ -139,7 +158,7 @@ export default function CodeEditor({
       <Editor
         height="100%"
         language={language}
-        value={code}
+        defaultValue={initialCode}
         onMount={handleEditorDidMount}
         theme="vs-dark"
         options={{
